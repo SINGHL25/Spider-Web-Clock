@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spider Web Clock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f1e 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .clock-container {
+            position: relative;
+            width: min(90vw, 500px);
+            height: min(90vw, 500px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .web-canvas {
+            position: absolute;
+            filter: drop-shadow(0 0 10px rgba(100, 255, 218, 0.6));
+        }
+
+        .clock-center {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #64ffda 0%, #1de9b6 100%);
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 20px #64ffda, 0 0 40px #64ffda;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+        .hour-hand {
+            width: 6px;
+            height: 35%;
+            background: linear-gradient(to top, #64ffda, #1de9b6);
+            margin-left: -3px;
+            border-radius: 3px 3px 0 0;
+            z-index: 7;
+        }
+
+        .minute-hand {
+            width: 4px;
+            height: 42%;
+            background: linear-gradient(to top, #00bcd4, #0097a7);
+            margin-left: -2px;
+            border-radius: 2px 2px 0 0;
+            z-index: 8;
+        }
+
+        .second-hand {
+            width: 2px;
+            height: 45%;
+            background: linear-gradient(to top, #ff6b6b, #ee5a6f);
+            margin-left: -1px;
+            border-radius: 1px 1px 0 0;
+            z-index: 9;
+            transition: transform 0.1s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .spider {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            z-index: 15;
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        .spider:hover {
+            transform: scale(1.3);
+            filter: drop-shadow(0 0 15px #ff6b6b);
+        }
+
+        .spider-body {
+            position: absolute;
+            width: 18px;
+            height: 24px;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .spider-body::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 16px;
+            background: linear-gradient(135deg, #3d3d3d 0%, #2a2a2a 100%);
+            border-radius: 50%;
+            top: -8px;
+            left: 3px;
+        }
+
+        .spider-eyes {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 3px;
+        }
+
+        .spider-eye {
+            width: 3px;
+            height: 3px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            box-shadow: 0 0 3px #ff6b6b;
+        }
+
+        .spider-leg {
+            position: absolute;
+            width: 20px;
+            height: 2px;
+            background: linear-gradient(to right, #2d2d2d, #1a1a1a);
+            transform-origin: left center;
+        }
+
+        .spider-leg:nth-child(1) { top: 8px; left: 0; transform: rotate(-45deg); }
+        .spider-leg:nth-child(2) { top: 12px; left: 0; transform: rotate(-25deg); }
+        .spider-leg:nth-child(3) { top: 16px; left: 0; transform: rotate(25deg); }
+        .spider-leg:nth-child(4) { top: 20px; left: 0; transform: rotate(45deg); }
+        .spider-leg:nth-child(5) { top: 8px; right: 0; transform: rotate(45deg); }
+        .spider-leg:nth-child(6) { top: 12px; right: 0; transform: rotate(25deg); }
+        .spider-leg:nth-child(7) { top: 16px; right: 0; transform: rotate(-25deg); }
+        .spider-leg:nth-child(8) { top: 20px; right: 0; transform: rotate(-45deg); }
+
+        .digital-time {
+            margin-top: 30px;
+            font-size: clamp(2rem, 5vw, 3rem);
+            color: #64ffda;
+            text-shadow: 0 0 10px #64ffda, 0 0 20px #64ffda, 0 0 30px #1de9b6;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .date-display {
+            margin-top: 10px;
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            color: #00bcd4;
+            text-shadow: 0 0 5px #00bcd4;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+
+        @media (max-width: 600px) {
+            .clock-container {
+                width: 85vw;
+                height: 85vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    
+    <div class="clock-container">
+        <canvas class="web-canvas" id="webCanvas"></canvas>
+        
+        <div class="spider" id="spider">
+            <div class="spider-leg"></div>
+            <div class="spider-leg"></div>
+            <div class="spider-leg"></div>
+            <div class="spider-leg"></div>
+            <div class="spider-leg"></div>
+            <div class="spider-leg"></div>
+            <div class="spider-leg"></div>
+            <div class="spider-leg"></div>
+            <div class="spider-body">
+                <div class="spider-eyes">
+                    <div class="spider-eye"></div>
+                    <div class="spider-eye"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hand hour-hand" id="hourHand"></div>
+        <div class="hand minute-hand" id="minuteHand"></div>
+        <div class="hand second-hand" id="secondHand"></div>
+        <div class="clock-center"></div>
+    </div>
+
+    <div class="digital-time" id="digitalTime">00:00:00</div>
+    <div class="date-display" id="dateDisplay"></div>
+
+    <script>
+        // Create stars
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.width = Math.random() * 3 + 'px';
+            star.style.height = star.style.width;
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Canvas setup for web
+        const canvas = document.getElementById('webCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.querySelector('.clock-container');
+        
+        function resizeCanvas() {
+            const size = container.offsetWidth;
+            canvas.width = size;
+            canvas.height = size;
+            drawWeb();
+        }
+
+        function drawWeb() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width * 0.45;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#64ffda';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#64ffda';
+
+            // Draw radial lines
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * 30 - 90) * Math.PI / 180;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * radius,
+                    centerY + Math.sin(angle) * radius
+                );
+                ctx.stroke();
+            }
+
+            // Draw concentric circles
+            ctx.strokeStyle = '#64ffda';
+            for (let i = 1; i <= 5; i++) {
+                const r = (radius / 5) * i;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw hour markers
+            ctx.fillStyle = '#64ffda';
+            ctx.font = `${canvas.width * 0.04}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            for (let i = 1; i <= 12; i++) {
+                const angle = (i * 30 - 90) * Math.PI / 180;
+                const x = centerX + Math.cos(angle) * radius * 0.85;
+                const y = centerY + Math.sin(angle) * radius * 0.85;
+                ctx.fillText(i.toString(), x, y);
+            }
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Clock hands
+        const hourHand = document.getElementById('hourHand');
+        const minuteHand = document.getElementById('minuteHand');
+        const secondHand = document.getElementById('secondHand');
+        const digitalTime = document.getElementById('digitalTime');
+        const dateDisplay = document.getElementById('dateDisplay');
+
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours() % 12;
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const milliseconds = now.getMilliseconds();
+
+            const hourDeg = (hours * 30) + (minutes * 0.5);
+            const minuteDeg = (minutes * 6) + (seconds * 0.1);
+            const secondDeg = (seconds * 6) + (milliseconds * 0.006);
+
+            hourHand.style.transform = `rotate(${hourDeg}deg)`;
+            minuteHand.style.transform = `rotate(${minuteDeg}deg)`;
+            secondHand.style.transform = `rotate(${secondDeg}deg)`;
+
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            digitalTime.textContent = timeString;
+
+            const dateString = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            dateDisplay.textContent = dateString;
+        }
+
+        updateClock();
+        setInterval(updateClock, 50);
+
+        // Spider animation
+        const spider = document.getElementById('spider');
+        let spiderAngle = 0;
+        let spiderRadius = 0;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        function animateSpider() {
+            const maxRadius = canvas.width * 0.4;
+            spiderAngle += 0.01;
+            spiderRadius = maxRadius * 0.7 + Math.sin(spiderAngle * 3) * maxRadius * 0.3;
+            
+            const x = Math.cos(spiderAngle) * spiderRadius;
+            const y = Math.sin(spiderAngle) * spiderRadius;
+            
+            spider.style.left = `calc(50% + ${x}px)`;
+            spider.style.top = `calc(50% + ${y}px)`;
+            spider.style.transform = `translate(-50%, -50%) rotate(${spiderAngle * 180 / Math.PI}deg)`;
+            
+            requestAnimationFrame(animateSpider);
+        }
+
+        animateSpider();
+
+        // Spider hover effect
+        spider.addEventListener('mouseenter', () => {
+            spider.style.filter = 'drop-shadow(0 0 20px #ff6b6b) hue-rotate(45deg)';
+        });
+
+        spider.addEventListener('mouseleave', () => {
+            spider.style.filter = 'drop-shadow(0 0 5px rgba(0, 0, 0, 0.5))';
+        });
+    </script>
+</body>
+</html>
